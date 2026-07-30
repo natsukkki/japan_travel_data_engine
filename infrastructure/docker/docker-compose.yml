@@ -1,0 +1,43 @@
+services:
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    env_file:
+      - ../env/.env
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - japan_travel_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    env_file:
+      - ../env/.env
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - ../scripts/init-minio.sh:/init-minio.sh:ro
+    entrypoint: ["/bin/sh", "/init-minio.sh"]
+    networks:
+      - japan_travel_network
+    restart: "no"
+
+volumes:
+  minio_data:
+    driver: local
+
+networks:
+  japan_travel_network:
+    driver: bridge
+    name: ${NETWORK_NAME:-japan_travel_network}
