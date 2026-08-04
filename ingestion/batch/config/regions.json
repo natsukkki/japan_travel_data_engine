@@ -1,0 +1,58 @@
+[
+  {
+    "region_code": "JP-TOKYO",
+    "prefecture_name": "Tokyo",
+    "city_name": "Tokyo",
+    "latitude": 35.68,
+    "longitude": 139.69
+  },
+  {
+    "region_code": "JP-KYOTO",
+    "prefecture_name": "Kyoto",
+    "city_name": "Kyoto",
+    "latitude": 35.01,
+    "longitude": 135.77
+  },
+  {
+    "region_code": "JP-OSAKA",
+    "prefecture_name": "Osaka",
+    "city_name": "Osaka",
+    "latitude": 34.69,
+    "longitude": 135.50
+  },
+  {
+    "region_code": "JP-HOKKAIDO",
+    "prefecture_name": "Hokkaido",
+    "city_name": "Sapporo",
+    "latitude": 43.06,
+    "longitude": 141.35
+  },
+  {
+    "region_code": "JP-OKINAWA",
+    "prefecture_name": "Okinawa",
+    "city_name": "Naha",
+    "latitude": 26.33,
+    "longitude": 127.80
+  },
+  {
+    "region_code": "JP-HIROSHIMA",
+    "prefecture_name": "Hiroshima",
+    "city_name": "Hiroshima",
+    "latitude": 34.39,
+    "longitude": 132.46
+  },
+  {
+    "region_code": "JP-NARA",
+    "prefecture_name": "Nara",
+    "city_name": "Nara",
+    "latitude": 34.68,
+    "longitude": 135.80
+  },
+  {
+    "region_code": "JP-FUKUOKA",
+    "prefecture_name": "Fukuoka",
+    "city_name": "Fukuoka",
+    "latitude": 33.59,
+    "longitude": 130.40
+  }
+]

@@ -1,0 +1,4 @@
+boto3==1.43.59
+requests==2.34.2
+python-dotenv==1.2.2
+pendulum==3.2.0

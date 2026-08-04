@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+ingestion/batch/state/ingestion_state.json
+
+# Keep the safe environment template while ignoring local secrets.
+!infrastructure/env/
+infrastructure/env/*
+!infrastructure/env/.env.example
