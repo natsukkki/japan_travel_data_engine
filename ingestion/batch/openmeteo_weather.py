@@ -7,12 +7,12 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
-import boto3
 import pendulum
 import requests
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 from ingestion.config import Settings, load_settings
+from ingestion.storage.minio import create_minio_client, upload_json_to_minio
 
 
 LOGGER = logging.getLogger(__name__)
@@ -82,17 +82,6 @@ class Region:
             raise ValueError(
                 f"Долгота должна быть от -180 до 180, получено: {self.longitude}"
             )
-
-
-def create_minio_client(settings: Settings):
-    """Create an S3-compatible client for MinIO."""
-
-    return boto3.client(
-        "s3",
-        endpoint_url=settings.minio_endpoint,
-        aws_access_key_id=settings.minio_access_key,
-        aws_secret_access_key=settings.minio_secret_key,
-    )
 
 
 def load_regions(path: Path = REGIONS_PATH) -> list[Region]:
@@ -325,40 +314,6 @@ def validate_weather_response(
             )
         if any(value is None for value in values):
             raise ValueError(f"Метрика {metric} содержит null")
-
-
-def upload_json_to_minio(
-    client,
-    bucket: str,
-    object_key: str,
-    data: dict[str, Any],
-) -> None:
-    """Serialize a dictionary and upload it as a JSON object."""
-
-    if not object_key:
-        raise ValueError("Ключ MinIO пуст")
-
-    try:
-        byte_data = json.dumps(data, allow_nan=False).encode("utf-8")
-    except (TypeError, ValueError) as error:
-        raise ValueError(
-            f"Не удалось сериализовать объект {object_key} в JSON"
-        ) from error
-
-    try:
-        client.put_object(
-            Bucket=bucket,
-            Key=object_key,
-            Body=byte_data,
-            ContentType="application/json",
-        )
-    except EndpointConnectionError as error:
-        raise RuntimeError("Не удалось подключиться к MinIO") from error
-    except ClientError as error:
-        error_code = error.response.get("Error", {}).get("Code", "Unknown")
-        raise RuntimeError(
-            f"Ошибка MinIO/S3 при записи {object_key}: {error_code}"
-        ) from error
 
 
 def update_region_state(

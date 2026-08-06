@@ -17,9 +17,9 @@ from ingestion.batch.openmeteo_weather import (
     get_state,
     split_date_range_by_month,
     update_region_state,
-    upload_json_to_minio,
     validate_weather_response,
 )
+from ingestion.storage.minio import upload_json_to_minio
 
 
 def initial_state() -> dict:
