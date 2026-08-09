@@ -10,7 +10,7 @@ from ingestion.batch.tourism_statistics import (
     STATE_SOURCE,
     STATE_VERSION,
     Artifact,
-    check_artifacts_upload,
+    check_artifact_upload,
     discover_artifacts,
     get_artifact_key,
     get_state,
@@ -83,11 +83,11 @@ class TourismStatisticsTests(unittest.TestCase):
         )
         state = initial_state()
 
-        self.assertTrue(check_artifacts_upload(state, artifact, "new-sha"))
+        self.assertTrue(check_artifact_upload(state, artifact, "new-sha"))
 
         state["artifacts"][artifact.logical_key] = {"sha256": "saved-sha"}
-        self.assertFalse(check_artifacts_upload(state, artifact, "saved-sha"))
-        self.assertTrue(check_artifacts_upload(state, artifact, "changed-sha"))
+        self.assertFalse(check_artifact_upload(state, artifact, "saved-sha"))
+        self.assertTrue(check_artifact_upload(state, artifact, "changed-sha"))
 
     def test_artifact_keys_include_release_period_and_checksum(self) -> None:
         final = Artifact("final:2024", "final", 2024, None, "https://example.com/a")

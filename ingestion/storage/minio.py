@@ -1,10 +1,12 @@
 import json
+from json import JSONDecodeError
 from typing import Any
 
 import boto3
-from botocore.exceptions import BotoCoreError
+from botocore.exceptions import BotoCoreError, EndpointConnectionError, ClientError
 
 from ingestion.config import Settings
+
 
 def create_minio_client(settings: Settings):
     """Create an S3-compatible client for MinIO."""
@@ -15,6 +17,31 @@ def create_minio_client(settings: Settings):
         aws_access_key_id=settings.minio_access_key,
         aws_secret_access_key=settings.minio_secret_key,
     )
+
+
+def load_json_from_minio(client, bucket: str, object_key: str) -> Any:
+    """Load and deserialize a JSON object from MinIO."""
+
+    try:
+        response = client.get_object(Bucket=bucket, Key=object_key)
+        with response['Body'] as stream:
+            raw_json = stream.read()
+    except EndpointConnectionError as error:
+        raise RuntimeError("Не удалось подключиться к MinIO") from error
+    except ClientError as error:
+        error_code = error.response.get("Error", {}).get("Code", "Unknown")
+        if error_code in {"NoSuchKey", "NoSuchObject", "404"}:
+            return None
+        raise RuntimeError(
+                f"Ошибка MinIO/S3 при чтении state: {error_code}"
+            ) from error
+    
+    try:
+        data = json.loads(raw_json)
+    except (JSONDecodeError, UnicodeDecodeError) as error:
+        raise ValueError("Данные содержат некорректный JSON") from error
+
+    return data
 
 
 def upload_bytes_to_minio(
