@@ -31,22 +31,17 @@ def get_required_env(name: str) -> str:
 
 
 def load_settings(env_path: Path = LOCAL_ENV_PATH) -> Settings:
-    """Load local defaults and return validated runtime settings.
+    """Load and validate runtime settings.
 
     Docker/Airflow variables already present in the environment take priority
     because ``override`` is disabled.
     """
 
     load_dotenv(env_path, override=False)
-    raw_bucket = os.getenv("MINIO_RAW_BUCKET", "raw-batch").strip()
-    if not raw_bucket:
-        raise RuntimeError(
-            "Переменная MINIO_RAW_BUCKET не может быть пустой"
-        )
 
     return Settings(
         minio_endpoint=get_required_env("MINIO_ENDPOINT"),
         minio_access_key=get_required_env("MINIO_ROOT_USER"),
         minio_secret_key=get_required_env("MINIO_ROOT_PASSWORD"),
-        raw_bucket=raw_bucket,
+        raw_bucket=get_required_env("MINIO_RAW_BUCKET"),
     )

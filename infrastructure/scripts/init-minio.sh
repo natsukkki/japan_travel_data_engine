@@ -4,7 +4,7 @@ set -eu
 echo "Настройка подключения к MinIO"
 mc alias set local http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
 
-bucket_name="${MINIO_RAW_BUCKET:-raw-batch}"
+bucket_name="${MINIO_RAW_BUCKET:?MINIO_RAW_BUCKET is required}"
 
 echo "Создание бакета ${bucket_name}"
 mc mb --ignore-existing "local/${bucket_name}"

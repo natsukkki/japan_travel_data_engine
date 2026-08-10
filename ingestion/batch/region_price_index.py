@@ -21,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 XLS_MAGIC = bytes.fromhex("D0CF11E0A1B11AE1")
 XLS_CONTENT_TYPE = "application/vnd.ms-excel"
 
-REGION_PRICE_INDEX_URL = 'https://www.e-stat.go.jp/en/stat-search/files?cycle=7&layout=datalist&page=1&tclass1val=0&toukei=00200571&tstat=000001067253'
+REGION_PRICE_INDEX_URL = "https://www.e-stat.go.jp/en/stat-search/files?cycle=7&layout=datalist&page=1&tclass1val=0&toukei=00200571&tstat=000001067253"
 
 TARGET_TABLE_NAME = (
     "Regional Difference Index of Consumer Prices by Ten Major Groups "
@@ -29,11 +29,11 @@ TARGET_TABLE_NAME = (
     "and ordinance-designated cities"
 )
 
-ARTIFACT_PREFIX = 'prices/regional_price_index'
+ARTIFACT_PREFIX = "prices/regional_price_index"
 
 STATE_KEY = "state/regional_price_index.json"
 STATE_VERSION = 1
-STATE_SOURCE = 'estat_regional_price_index'
+STATE_SOURCE = "estat_regional_price_index"
 
 INITIAL_YEAR = 2024
 
@@ -59,16 +59,16 @@ def validate_state(state: Any) -> dict[str, Any]:
 
     if not isinstance(state, dict):
         raise ValueError("Корневой объект state должен быть словарём")
-    if state.get('version') != STATE_VERSION:
+    if state.get("version") != STATE_VERSION:
         raise ValueError("Некорректная или неподдерживаемая версия state")
-    if state.get('source') != STATE_SOURCE:
+    if state.get("source") != STATE_SOURCE:
         raise ValueError("Некорректное значение source в state")
     
-    last_checked_at = state.get('last_checked_at')
+    last_checked_at = state.get("last_checked_at")
     if last_checked_at is not None and (not isinstance(last_checked_at, str) or not last_checked_at.strip()):
         raise ValueError("Поле last_checked_at должно быть null или непустой строкой")
 
-    if not isinstance(state.get('artifacts'), dict):
+    if not isinstance(state.get("artifacts"), dict):
         raise ValueError("Поле artifacts отсутствует или не является словарём")
 
     return state
@@ -98,12 +98,12 @@ def fetch_source_page(session: requests.Session, url: str) -> str:
     except requests.RequestException as error:
         raise RuntimeError(f"Не удалось загрузить страницу e-Stat: {url}") from error
     
-    content_type = response.headers.get('Content-Type', '').lower()
-    if 'text/html' not in content_type:
+    content_type = response.headers.get("Content-Type", "").lower()
+    if "text/html" not in content_type:
         raise ValueError(f"Страница e-Stat вернула данные не в формате HTML: {url}")
     
     try:
-        text = response.content.decode('utf-8')
+        text = response.content.decode("utf-8")
     except UnicodeDecodeError as error:
         raise ValueError( "Не удалось декодировать HTML e-Stat в UTF-8") from error
     
@@ -116,11 +116,11 @@ def fetch_source_page(session: requests.Session, url: str) -> str:
 def discover_year_pages(html: str) -> list[YearPage]:
     """Discover annual publication pages from the e-Stat catalogue."""
 
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, "html.parser")
     discovered: dict[int, str] = {}
 
-    for tag in soup.find_all(name='a', href=True):
-        href = tag['href'].strip()
+    for tag in soup.find_all(name="a", href=True):
+        href = tag["href"].strip()
 
         if not href:
             continue
@@ -167,10 +167,10 @@ def discover_year_pages(html: str) -> list[YearPage]:
 def discover_artifact(html: str, year_page: YearPage) -> Artifact:
     """Find the required e-Stat XLS link on one annual results page."""
 
-    soup = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, "html.parser")
     target_table_tags: list[Tag] = []
 
-    for tag in soup.find_all(name='a', href=True):
+    for tag in soup.find_all(name="a", href=True):
         raw_text = tag.get_text(separator=" ",strip=True)
         raw_text = unicodedata.normalize("NFKC", raw_text)
         text = " ".join(raw_text.split())
@@ -190,7 +190,7 @@ def discover_artifact(html: str, year_page: YearPage) -> Artifact:
     if container is None:
         raise ValueError(f"Не найдена карточка набора e-Stat для {year_page.year} года")
 
-    download_tags = container.select('a[href][data-file_type="EXCEL_Report"]')
+    download_tags = container.select("a[href][data-file_type=\"EXCEL_Report\"]")
     if len(download_tags) != 1:
         raise ValueError(f"Для {year_page.year} года ожидалась одна ссылка EXCEL Report, найдено: {len(download_tags)}")
 
@@ -245,7 +245,7 @@ def check_artifact_upload(state: dict[str, Any], artifact: Artifact, sha256: str
     """Return whether an artifact is new or has changed."""
 
     logical_key = artifact.logical_key
-    saved_artifact = state['artifacts'].get(logical_key)
+    saved_artifact = state["artifacts"].get(logical_key)
 
     if saved_artifact is None: 
         return True
@@ -253,7 +253,7 @@ def check_artifact_upload(state: dict[str, Any], artifact: Artifact, sha256: str
     if not isinstance(saved_artifact, dict):
         raise ValueError(f"Некорректный state для {logical_key}")
     
-    saved_sha256 = saved_artifact.get('sha256')
+    saved_sha256 = saved_artifact.get("sha256")
 
     if not isinstance(saved_sha256, str) or not saved_sha256.strip():
         raise ValueError(f"В state отсутствует sha256 для {logical_key}")
@@ -264,16 +264,16 @@ def check_artifact_upload(state: dict[str, Any], artifact: Artifact, sha256: str
 def update_artifact_state(
     state: dict[str, Any], 
     artifact: Artifact, 
-    artifact_key: str,
+    object_key: str,
     sha256: str, 
 ) -> None:
     """Update state after a successful artifact upload."""
 
-    state['artifacts'][artifact.logical_key] = {
-        'sha256': sha256,
-        'source_url': artifact.source_url,
-        'object_key': artifact_key,
-        'updated_at': pendulum.now('UTC').to_iso8601_string()
+    state["artifacts"][artifact.logical_key] = {
+        "sha256": sha256,
+        "source_url": artifact.source_url,
+        "object_key": object_key,
+        "updated_at": pendulum.now("UTC").to_iso8601_string()
     }
 
 
@@ -314,12 +314,12 @@ def run_region_price_index_ingestion(settings: Settings | None = None,) -> dict[
                 skipped_artifacts += 1
                 continue
 
-            artifact_key = f'{ARTIFACT_PREFIX}/{artifact.logical_key}/{sha256}.xls'
+            object_key = f"{ARTIFACT_PREFIX}/{artifact.logical_key}/{sha256}.xls"
 
             upload_bytes_to_minio(
                 client=client, 
                 bucket=runtime_settings.raw_bucket, 
-                object_key=artifact_key, 
+                object_key=object_key,
                 data=content_bytes,
                 content_type=XLS_CONTENT_TYPE,
             )
@@ -327,7 +327,7 @@ def run_region_price_index_ingestion(settings: Settings | None = None,) -> dict[
                 state=state, 
                 artifact=artifact, 
                 sha256=sha256, 
-                artifact_key=artifact_key
+                object_key=object_key
             )
             upload_json_to_minio(
                 client=client, 
@@ -336,7 +336,7 @@ def run_region_price_index_ingestion(settings: Settings | None = None,) -> dict[
                 data=state
             )
 
-            LOGGER.info("Файл за %s год загружен в %s", artifact.year, artifact_key)
+            LOGGER.info("Файл за %s год загружен в %s", artifact.year, object_key)
             uploaded_artifacts += 1
 
     state["last_checked_at"] = pendulum.now("UTC").to_iso8601_string()
@@ -348,7 +348,7 @@ def run_region_price_index_ingestion(settings: Settings | None = None,) -> dict[
         data=state,
     )
     return {
-        'discovered_objects': len(year_pages),
+        "discovered_objects": len(year_pages),
         "uploaded_objects": uploaded_artifacts,
         "skipped_objects": skipped_artifacts,
     }
@@ -366,5 +366,5 @@ def main() -> None:
     LOGGER.info("Ingestion завершён: %s", summary)
 
 
-if __name__ ==  "__main__":
+if __name__ == "__main__":
     main()
