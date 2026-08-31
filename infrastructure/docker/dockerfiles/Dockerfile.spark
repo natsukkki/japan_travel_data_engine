@@ -1,0 +1,24 @@
+FROM spark:4.0.2-java21-python3
+
+USER root
+
+WORKDIR /opt/project
+
+ENV SPARK_HOME=/opt/spark
+ENV PATH="${SPARK_HOME}/bin:${PATH}"
+ENV HOME=/home/spark
+ENV SPARK_SUBMIT_OPTS="-Duser.home=${HOME}"
+ENV PYTHONPATH="/opt/project:${PYTHONPATH}"
+
+RUN mkdir -p "${HOME}/.ivy2" \
+    && chown -R spark:spark "${HOME}"
+
+COPY infrastructure/config/spark/spark-defaults.conf \
+    "${SPARK_HOME}/conf/spark-defaults.conf"
+
+COPY processing/spark/requirements.txt /tmp/spark-requirements.txt
+
+RUN pip install --no-cache-dir \
+    -r /tmp/spark-requirements.txt
+
+USER spark

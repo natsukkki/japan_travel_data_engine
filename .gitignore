@@ -223,3 +223,6 @@ ingestion/batch/state/ingestion_state.json
 !infrastructure/env/
 infrastructure/env/*
 !infrastructure/env/.env.example
+
+# Local Spark SQL warehouse created by development jobs.
+spark-warehouse/

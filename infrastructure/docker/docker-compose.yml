@@ -33,8 +33,58 @@ services:
       - japan_travel_network
     restart: "no"
 
+  postgres:
+    image: postgres:16.10
+    env_file:
+      - ../env/.env
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../config/postgres/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - japan_travel_network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  spark:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/dockerfiles/Dockerfile.spark
+    env_file:
+      - ../env/.env
+    working_dir: /opt/project
+    volumes:
+      - ../..:/opt/project
+      - spark_ivy_cache:/home/spark/.ivy2
+    depends_on:
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    networks:
+      - japan_travel_network
+    command: ["sleep", "infinity"]
+
 volumes:
   minio_data:
+    driver: local
+
+  postgres_data:
+    driver: local
+
+  spark_ivy_cache:
     driver: local
 
 networks:
