@@ -26,7 +26,7 @@ def get_regions_schema() -> StructType:
             StructField("prefecture_name", StringType(), nullable=True),
             StructField("city_name", StringType(), nullable=True),
             StructField("latitude", DecimalType(precision=8, scale=5), nullable=True),
-            StructField("longitude", DecimalType(precision=9, scale=5), nullable=True) #ставим тру чтобы спрак некорреткные строки смог прочитать как Null
+            StructField("longitude", DecimalType(precision=9, scale=5), nullable=True)
         ]
     )
 
@@ -69,8 +69,7 @@ def validate_required_fields(regions_df: DataFrame) -> None:
         | (F.col("city_name") == "")
     )
 
-    invalid_rows = regions_df.filter(invalid_condition) #проверяем есть ли побитые данные, а не просто оставляем качественные, так как если будут побитые, то нужно оишбку выбрасывать
-    #пересобирает в скл выражение наш код на питоне, будет буквально where region_code IS NULL OR ..
+    invalid_rows = regions_df.filter(invalid_condition)
 
     if invalid_rows.head(1):
         raise ValueError("Справочник регионов содержит пустые обязательные поля")
@@ -100,7 +99,7 @@ def validate_unique_region_codes(regions_df: DataFrame) -> None:
     regions_count = (
         regions_df
         .groupBy(F.col("region_code"))
-        .agg(F.count("*").alias("row_count")) #считаем сколько строк в каждой группе, лучше юзать agg так как точечный контроль, за раз несколько агрегаций + алиас
+        .agg(F.count("*").alias("row_count"))
     )
 
     invalid_df = regions_count.filter(F.col("row_count") > 1)
@@ -140,7 +139,7 @@ def validate_region_conflicts(
 
     attributes_differ = (
         ~F.col("source.prefecture_name").eqNullSafe(
-            F.col("target.prefecture_name")    #аналог IS DISTINCT, ~ заменяет not, можно было бы != если бы не нул значения (ну в проде так не делают)
+            F.col("target.prefecture_name")
         )
         | ~F.col("source.city_name").eqNullSafe(
             F.col("target.city_name")
