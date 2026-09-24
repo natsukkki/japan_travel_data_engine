@@ -221,13 +221,13 @@ class OpenMeteoWeatherTests(unittest.TestCase):
             state,
             "JP-TOKYO",
             pendulum.date(2026, 7, 31),
-            "weather/JP-TOKYO/2026/07/2026-07-01-2026-07-31.json",
+            "weather/JP-TOKYO/2026/07/2026-07-01.json",
         )
         update_region_state(
             state,
             "JP-TOKYO",
             pendulum.date(2026, 8, 2),
-            "weather/JP-TOKYO/2026/08/2026-08-01-2026-08-02.json",
+            "weather/JP-TOKYO/2026/08/2026-08-01.json",
         )
 
         self.assertEqual(
@@ -236,7 +236,7 @@ class OpenMeteoWeatherTests(unittest.TestCase):
         )
         self.assertEqual(
             state["regions"]["JP-TOKYO"]["last_object_key"],
-            "weather/JP-TOKYO/2026/08/2026-08-01-2026-08-02.json",
+            "weather/JP-TOKYO/2026/08/2026-08-01.json",
         )
 
 

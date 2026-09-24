@@ -150,6 +150,7 @@ def validate_state(state: Any) -> dict[str, Any]:
         raise ValueError("Модель в state не совпадает с WEATHER_MODEL")
     if not isinstance(state.get("regions"), dict):
         raise ValueError("Поле regions отсутствует или не является словарём")
+
     return state
 
 
@@ -189,9 +190,9 @@ def determine_start_date(
 ) -> pendulum.Date:
     """Determine the first date not yet ingested for a region."""
 
-    region_state = state["regions"].get(region_code)
-    if region_state is None:
+    if region_code not in state["regions"]:
         return INITIAL_START_DATE
+    region_state = state["regions"].get(region_code)
     if not isinstance(region_state, dict):
         raise ValueError(f"Состояние региона {region_code} должно быть словарём")
 
@@ -370,8 +371,7 @@ def run_weather_ingestion(
                 object_key = (
                     f"weather/{region.region_code}/{from_date.year}/"
                     f"{from_date.month:02d}/"
-                    f"{from_date.to_date_string()}-"
-                    f"{to_date.to_date_string()}.json"
+                    f"{from_date.to_date_string()}.json"
                 )
                 upload_json_to_minio(
                     client,
