@@ -8,7 +8,6 @@ ENV SPARK_HOME=/opt/spark
 ENV PATH="${SPARK_HOME}/bin:${PATH}"
 ENV HOME=/home/spark
 ENV SPARK_SUBMIT_OPTS="-Duser.home=${HOME}"
-ENV PYTHONPATH="/opt/project:${PYTHONPATH}"
 
 RUN mkdir -p "${HOME}/.ivy2" \
     && chown -R spark:spark "${HOME}"
@@ -17,8 +16,12 @@ COPY infrastructure/config/spark/spark-defaults.conf \
     "${SPARK_HOME}/conf/spark-defaults.conf"
 
 COPY processing/spark/requirements.txt /tmp/spark-requirements.txt
+COPY requirements.txt /tmp/ingestion-requirements.txt
 
 RUN pip install --no-cache-dir \
-    -r /tmp/spark-requirements.txt
+    -r /tmp/spark-requirements.txt \
+    -r /tmp/ingestion-requirements.txt
+
+ENV PYTHONPATH="/opt/project:${SPARK_HOME}/python/lib/pyspark.zip:${SPARK_HOME}/python/lib/py4j-0.10.9.9-src.zip"
 
 USER spark
