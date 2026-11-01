@@ -9,10 +9,10 @@ from typing import Any
 
 import pendulum
 import requests
-from botocore.exceptions import ClientError, EndpointConnectionError
+from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
 
 from ingestion.config import Settings, load_settings
-from ingestion.storage.minio import create_minio_client, upload_json_to_minio
+from storage.minio import create_minio_client, upload_json_to_minio
 
 
 LOGGER = logging.getLogger(__name__)
@@ -174,6 +174,10 @@ def get_state(client, bucket: str) -> dict[str, Any]:
                 }
         raise RuntimeError(
             f"Ошибка MinIO/S3 при чтении state: {error_code}"
+        ) from error
+    except BotoCoreError as error:
+        raise RuntimeError(
+            f"Не удалось прочитать объект {STATE_KEY} из MinIO"
         ) from error
 
     try:
@@ -340,7 +344,11 @@ def run_weather_ingestion(
     runtime_settings = settings or load_settings()
     target_end_date = pendulum.today(WEATHER_TIMEZONE).subtract(days=1).date()
     regions = load_regions()
-    client = create_minio_client(runtime_settings)
+    client = create_minio_client(
+        endpoint=runtime_settings.minio_endpoint,
+        access_key=runtime_settings.minio_access_key,
+        secret_key=runtime_settings.minio_secret_key,
+    )
     state = get_state(client, runtime_settings.raw_bucket)
     uploaded_objects = 0
 

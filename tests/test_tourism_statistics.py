@@ -187,7 +187,11 @@ class TourismStatisticsTests(unittest.TestCase):
                 "skipped_objects": 1,
             },
         )
-        mock_create_client.assert_called_once_with(settings)
+        mock_create_client.assert_called_once_with(
+            endpoint=settings.minio_endpoint,
+            access_key=settings.minio_access_key,
+            secret_key=settings.minio_secret_key,
+        )
         mock_upload_bytes.assert_called_once()
         self.assertEqual(mock_upload_bytes.call_args.args[2].split("/")[-1], hashlib.sha256(changed_content).hexdigest() + ".xlsx")
         self.assertEqual(mock_upload_json.call_count, 2)

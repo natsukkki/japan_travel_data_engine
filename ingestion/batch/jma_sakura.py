@@ -11,7 +11,7 @@ import pendulum
 import requests
 
 from ingestion.config import Settings, load_settings
-from ingestion.storage.minio import create_minio_client, load_json_from_minio, upload_bytes_to_minio, upload_json_to_minio
+from storage.minio import create_minio_client, load_json_from_minio, upload_bytes_to_minio, upload_json_to_minio
 
 
 LOGGER = logging.getLogger(__name__)
@@ -200,7 +200,11 @@ def run_jma_sakura_ingestion(settings: Settings | None = None) -> dict[str, int]
     """Download changed JMA sakura CSV files and persist ingestion state."""
 
     runtime_settings = settings or load_settings()
-    client = create_minio_client(settings=runtime_settings)
+    client = create_minio_client(
+        endpoint=runtime_settings.minio_endpoint,
+        access_key=runtime_settings.minio_access_key,
+        secret_key=runtime_settings.minio_secret_key,
+    )
 
     state = get_state(client=client, bucket=runtime_settings.raw_bucket)
 

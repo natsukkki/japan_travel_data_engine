@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 
 from ingestion.config import Settings, load_settings
-from ingestion.storage.minio import create_minio_client, upload_json_to_minio, upload_bytes_to_minio, load_json_from_minio
+from storage.minio import create_minio_client, upload_json_to_minio, upload_bytes_to_minio, load_json_from_minio
 
 LOGGER = logging.getLogger(__name__)
 
@@ -281,7 +281,11 @@ def run_region_price_index_ingestion(settings: Settings | None = None,) -> dict[
     """Discover and ingest annual regional price index files."""
 
     runtime_settings = settings or load_settings()
-    client = create_minio_client(runtime_settings)
+    client = create_minio_client(
+        endpoint=runtime_settings.minio_endpoint,
+        access_key=runtime_settings.minio_access_key,
+        secret_key=runtime_settings.minio_secret_key,
+    )
 
     state = get_state(client=client, bucket=runtime_settings.raw_bucket,)
 

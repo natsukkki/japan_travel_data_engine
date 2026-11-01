@@ -227,7 +227,11 @@ class RegionPriceIndexTests(unittest.TestCase):
                 "skipped_objects": 1,
             },
         )
-        mock_create_client.assert_called_once_with(settings)
+        mock_create_client.assert_called_once_with(
+            endpoint=settings.minio_endpoint,
+            access_key=settings.minio_access_key,
+            secret_key=settings.minio_secret_key,
+        )
         mock_upload_bytes.assert_called_once_with(
             client=mock_create_client.return_value,
             bucket="raw-batch",

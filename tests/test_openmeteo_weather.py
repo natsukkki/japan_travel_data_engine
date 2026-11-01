@@ -1,9 +1,14 @@
 import json
+from io import BytesIO
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pendulum
 from botocore.exceptions import ClientError
+from botocore.response import StreamingBody
+from urllib3.exceptions import ProtocolError
+
+from http_stream import make_http_stream
 
 from ingestion.batch.openmeteo_weather import (
     STATE_KEY,
@@ -19,7 +24,7 @@ from ingestion.batch.openmeteo_weather import (
     update_region_state,
     validate_weather_response,
 )
-from ingestion.storage.minio import upload_json_to_minio
+from storage.minio import upload_json_to_minio
 
 
 def initial_state() -> dict:
@@ -69,6 +74,29 @@ class RecordingSession:
 
 
 class OpenMeteoWeatherTests(unittest.TestCase):
+    def test_get_state_reads_streaming_body_and_closes_stream(self) -> None:
+        state = initial_state()
+        content = json.dumps(state).encode("utf-8")
+        body = BytesIO(content)
+        client = Mock()
+        client.get_object.return_value = {"Body": StreamingBody(body, len(content))}
+
+        self.assertEqual(get_state(client, "raw-batch"), state)
+        self.assertTrue(body.closed)
+
+    def test_get_state_rejects_incomplete_download_and_closes_stream(self) -> None:
+        content = json.dumps(initial_state()).encode("utf-8")
+        body = make_http_stream(content, content_length=len(content) + 10)
+        client = Mock()
+        client.get_object.return_value = {
+            "Body": StreamingBody(body, len(content) + 10)
+        }
+
+        with self.assertRaises(ProtocolError):
+            get_state(client, "raw-batch")
+
+        self.assertTrue(body.closed)
+
     def test_first_run_starts_at_initial_date(self) -> None:
         state = initial_state()
 
