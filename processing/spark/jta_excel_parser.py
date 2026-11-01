@@ -1,12 +1,15 @@
 """Read prefecture-level guest nights from JTA accommodation workbooks.
 
-This module only interprets Excel. Selection of publication versions, region
-mapping, validation across files, and DDS writes belong to the ETL job.
+This module interprets Excel and maps selected prefectures to project regions.
+Publication version selection, DDS region ID mapping, validation across files,
+and DDS writes belong to the ETL job.
 """
 
 from __future__ import annotations
 
 from io import BytesIO
+import json
+from pathlib import Path
 import re
 from typing import Literal, TypedDict
 
@@ -16,15 +19,51 @@ from openpyxl import load_workbook
 ReleaseType = Literal["final", "second_preliminary"]
 SHEET_PATTERN = re.compile(r"^第2表\((\d{1,2})月\)$")
 PREFECTURE_PATTERN = re.compile(r"^\s*(\d{2})(\S.+?)\s*$")
+REGIONS_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "ingestion" / "batch" / "config" / "regions.json"
+)
 
 
 class TourismRow(TypedDict):
     prefecture_code: int
-    prefecture_name_jp: str
+    region_code: str
     year: int
     month: int
     total_guest_nights: int
     foreign_guest_nights: int
+
+
+def load_region_codes_by_prefecture(path: Path = REGIONS_PATH) -> dict[int, str]:
+    """Map selected prefecture codes to region codes using the shared config."""
+
+    with path.open(encoding="utf-8") as stream:
+        regions = json.load(stream)
+
+    if not isinstance(regions, list) or not regions:
+        raise ValueError("Справочник регионов должен содержать непустой список")
+
+    region_codes_by_prefecture: dict[int, str] = {}
+    for index, region in enumerate(regions, start=1):
+        if not isinstance(region, dict):
+            raise ValueError(f"Регион №{index} должен быть объектом JSON")
+
+        code = region.get("prefecture_code")
+        if isinstance(code, bool) or not isinstance(code, int) or not 1 <= code <= 47:
+            raise ValueError(
+                f"У региона №{index} prefecture_code должен быть целым числом от 1 до 47"
+            )
+        if code in region_codes_by_prefecture:
+            raise ValueError(f"Повторяющийся prefecture_code в справочнике: {code}")
+
+        region_code = region.get("region_code")
+        if not isinstance(region_code, str) or not region_code.strip():
+            raise ValueError(
+                f"У региона №{index} region_code должен быть непустой строкой"
+            )
+        region_codes_by_prefecture[code] = region_code.strip()
+
+    return region_codes_by_prefecture
 
 
 def _count(value: object, sheet_name: str, row_number: int) -> int:
@@ -50,12 +89,15 @@ def parse_jta_workbook(
     release_type: ReleaseType,
     year: int,
     month: int | None = None,
+    regions_path: Path = REGIONS_PATH,
 ) -> list[TourismRow]:
-    """Extract 47 prefectures per month from JTA's second table.
+    """Extract monthly JTA rows with region codes from the shared config.
 
     ``year`` and ``month`` are taken from the ingestion artifact metadata, not
     inferred from sheet titles. A final workbook has twelve monthly sheets;
     a second preliminary workbook has exactly the requested month's sheet.
+    Validate all 47 source prefectures, but return only those in regions_path.
+    Include the configured region_code instead of the source prefecture name.
     """
     if release_type not in ("final", "second_preliminary"):
         raise ValueError(f"Неизвестный тип публикации: {release_type}")
@@ -65,6 +107,8 @@ def parse_jta_workbook(
         raise ValueError("Для second_preliminary нужен месяц от 1 до 12")
     if release_type == "final" and month is not None:
         raise ValueError("Для final месяц задаётся листами книги")
+
+    region_codes_by_prefecture = load_region_codes_by_prefecture(path=regions_path)
 
     workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
     try:
@@ -110,9 +154,11 @@ def parse_jta_workbook(
                 foreign = _count(values[foreign_column], sheet.title, row_number)
                 if foreign > total:
                     raise ValueError(f"{sheet.title}, строка {row_number}: иностранных ночёвок больше общего числа")
+                if prefecture_code not in region_codes_by_prefecture:
+                    continue
                 result.append({
                     "prefecture_code": prefecture_code,
-                    "prefecture_name_jp": match.group(2).strip(),
+                    "region_code": region_codes_by_prefecture[prefecture_code],
                     "year": year,
                     "month": sheet_month,
                     "total_guest_nights": total,

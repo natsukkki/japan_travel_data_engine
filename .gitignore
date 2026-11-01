@@ -226,3 +226,9 @@ infrastructure/env/*
 
 # Local Spark SQL warehouse created by development jobs.
 spark-warehouse/
+
+# macOS Finder metadata.
+.DS_Store
+
+# Local VS Code settings.
+.vscode/

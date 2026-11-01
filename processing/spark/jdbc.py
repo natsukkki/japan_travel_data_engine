@@ -1,4 +1,5 @@
 """Shared PostgreSQL JDBC operations for Spark jobs."""
+
 import psycopg
 from psycopg import sql
 from pyspark.sql import DataFrame, SparkSession
@@ -32,7 +33,7 @@ def write_jdbc(
     settings: SparkSettings,
     dbtable: str,
     df: DataFrame,
-    mode: str = "append"
+    mode: str = "append",
 ) -> None:
     """Write a Spark DataFrame to PostgreSQL through JDBC."""
 
@@ -61,13 +62,13 @@ def truncate_postgres_table(
         raise ValueError(
             "Имя таблицы должно иметь формат schema.table"
         ) from error
-    
+
     postgres_url = settings.postgres_jdbc_url.removeprefix("jdbc:")
 
     with psycopg.connect(
         postgres_url,
-        user=settings.postgres_user, 
-        password=settings.postgres_password
+        user=settings.postgres_user,
+        password=settings.postgres_password,
     ) as connection:
         with connection.cursor() as cursor:
             cursor.execute(
@@ -78,19 +79,17 @@ def truncate_postgres_table(
 
 
 def execute_postgres_transaction(
-        settings: SparkSettings, 
-        statements: tuple[str, ...]
-) -> None: #чисто шаблонная вещь для исполнения несколькиих транзакций, логика погоды в скрипте etl погоды
+    settings: SparkSettings,
+    statements: tuple[str, ...],
+) -> None:
 
     postgres_url = settings.postgres_jdbc_url.removeprefix("jdbc:")
 
     with psycopg.connect(
-        postgres_url, 
-        user=settings.postgres_user, 
-        password=settings.postgres_password
+        postgres_url,
+        user=settings.postgres_user,
+        password=settings.postgres_password,
     ) as connection:
         with connection.cursor() as cursor:
             for statement in statements:
                 cursor.execute(statement)
-
-        
